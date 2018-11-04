@@ -14,6 +14,10 @@ import sys
 import pickle
 import struct
 
+# For now, the way to run the code is: python yolo_tracking_2.7.py --image dog.jpg --config yolov3.cfg --weights yolov3.weights --classes yolov3.txt
+#
+
+
 ap = argparse.ArgumentParser()
 ap.add_argument('-i', '--image', required=True,
                 help = 'path to input image')
