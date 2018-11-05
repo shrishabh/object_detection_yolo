@@ -17,20 +17,39 @@ import struct
 # For now, the way to run the code is: python yolo_tracking_2.7.py --image dog.jpg --config yolov3.cfg --weights yolov3.weights --classes yolov3.txt
 #
 
+# ap = argparse.ArgumentParser()
+# ap.add_argument('-i', '--image', required=True,
+#                 help = 'path to input image')
+# ap.add_argument('-c', '--config', required=True,
+#                 help = 'path to yolo config file')
+# ap.add_argument('-w', '--weights', required=True,
+#                 help = 'path to yolo pre-trained weights')
+# ap.add_argument('-cl', '--classes', required=True,
+#                 help = 'path to text file containing class names')
+# args = ap.parse_args()
 
 ap = argparse.ArgumentParser()
-ap.add_argument('-i', '--image', required=True,
-                help = 'path to input image')
-ap.add_argument('-c', '--config', required=True,
-                help = 'path to yolo config file')
-ap.add_argument('-w', '--weights', required=True,
-                help = 'path to yolo pre-trained weights')
-ap.add_argument('-cl', '--classes', required=True,
-                help = 'path to text file containing class names')
+#ClientMode initiates the sockets part which sends the images to a server with the ip that you provide 
+ap.add_argument('-m', '--clientmode', required=False, default=False,
+                help = 'decide whether to run in client mode or not')
+
+#The ip address of the server that you want it to connect to. Default is localhost
+ap.add_argument('-ip','--ip',required=False, default='',help="The address that you are sending this to")
+#Location of the weights, config file and the classes hardcoded here, can make it dynamic by uncommenting the lines above
+ap.add_argument('-p', '--port', required=False, default=8080,
+                help="The address that you are sending this to")
 args = ap.parse_args()
 
-clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-clientsocket.connect(('10.138.19.36', 8089))
+CONFIG="yolov3.cfg"
+WEIGHTS = "yolov3.weights"
+CLASSES = "yolov3.txt"
+
+if args.clientmode:
+    clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    if args.ip != '':
+        clientsocket.connect((args.ip, args.port))
+    else:
+        clientsocket.connect(('localhost', args.port))
 
 def get_output_layers(net):
     
@@ -66,7 +85,8 @@ def create_classes(input):
 Width = 640
 Height = 480
 scale = 0.00392
-classes = create_classes(args.classes)
+classes = create_classes(CLASSES)
+print classes
 cam = cv2.VideoCapture(0)
 cv2.namedWindow("test")
 cam.set(3,Width)
@@ -74,7 +94,7 @@ cam.set(4,Height)
 #print(classes)
 COLORS = np.random.uniform(0, 255, size=(len(classes), 3))
 
-net = cv2.dnn.readNet(args.weights, args.config)
+net = cv2.dnn.readNet(WEIGHTS, CONFIG)
 # classes = None
 
 # with open(args.classes, 'r') as f:
@@ -101,6 +121,8 @@ while True:
         for detection in out:
             scores = detection[5:]
             class_id = np.argmax(scores)
+            if class_id != 0:
+                continue
             confidence = scores[class_id]
             if confidence > 0.5:
                 center_x = int(detection[0] * Width)
@@ -128,13 +150,14 @@ while True:
         #print x,y,w,h
         draw_prediction(image, class_ids[i], confidences[i], int(round(x)), int(round(y)), int(round(x+w)), int(round(y+h)))
 
-    #cv2.imshow("test", image)
+    cv2.imshow("test", image)
+    print "Image Open"
     #img = image
     # Pickle file is newly created where foo1.py is
     #f = open('pickle.p', 'w')
     #pickle.dump(img, f)
-    data = pickle.dumps(imgage)
-    clientsocket.sendall(struct.pack("L", len(data))+data)
+    #data = pickle.dumps(image)
+    #clientsocket.sendall(struct.pack("L", len(data))+data)
     #print("Image sent")
     # cv2.imwrite("object-detection_{}.jpg".format(id_counter), image)
     # id_counter = id_counter + 1
